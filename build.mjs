@@ -10,13 +10,20 @@ const ROOT = process.cwd()
 const POSTS_DIR = path.join(ROOT, 'posts')
 const DIST = path.join(ROOT, 'dist')
 
+// GitHub Pages 项目页部署在 /<repo>/ 子路径下，用户页（<owner>.github.io）则在根路径
+const REPO = (process.env.GITHUB_REPOSITORY || '').split('/')[1] || ''
+const BASE = /\.github\.io$/i.test(REPO) || !REPO ? '/' : `/${REPO}/`
+
 const SITE = {
   title: 'AgentUp',
   tagline: '架构与 AI 落地笔记',
   description: '关于企业架构、AI Agent 与工程落地的思考。',
-  url: 'https://' + (process.env.SITE_HOST || 'example.github.io'),
+  url: 'https://' + (process.env.SITE_HOST || 'example.github.io') + BASE,
+  base: BASE,
   lang: 'zh-CN',
 }
+
+const href = (p = '') => BASE + String(p).replace(/^\/+/, '')
 
 marked.setOptions({ gfm: true, breaks: false })
 
@@ -73,13 +80,13 @@ function page({ title, description, content, headExtra = '', bodyClass = '' }) {
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:type" content="article">
 <meta name="color-scheme" content="light dark">
-<link rel="stylesheet" href="/assets/style.css">
-<link rel="alternate" type="application/rss+xml" title="${esc(SITE.title)}" href="/feed.xml">
+<link rel="stylesheet" href="${href('assets/style.css')}">
+<link rel="alternate" type="application/rss+xml" title="${esc(SITE.title)}" href="${href('feed.xml')}">
 ${headExtra}
 </head>
 <body${bodyClass ? ` class="${bodyClass}"` : ''}>
 <header class="site-head">
-  <a class="brand" href="/">${esc(SITE.title)}</a>
+  <a class="brand" href="${href()}">${esc(SITE.title)}</a>
   <span class="tagline">${esc(SITE.tagline)}</span>
 </header>
 <main>
@@ -87,7 +94,7 @@ ${content}
 </main>
 <footer class="site-foot">
   <span>© ${new Date().getFullYear()} ${esc(SITE.title)}</span>
-  <a href="/feed.xml">RSS</a>
+  <a href="${href('feed.xml')}">RSS</a>
 </footer>
 </body>
 </html>
@@ -138,7 +145,7 @@ async function build() {
   const items = posts
     .map(
       (p) => `  <article class="card">
-    <a class="card-link" href="/posts/${p.slug}/">
+    <a class="card-link" href="${href(`posts/${p.slug}/`)}">
       <h2>${esc(p.title)}</h2>
     </a>
     <p class="meta"><time datetime="${esc(p.date)}">${esc(p.date)}</time> · ${p.minutes} 分钟</p>
@@ -178,7 +185,7 @@ ${items}
   <div class="prose">
 ${p.html}
   </div>
-  <nav class="post-foot"><a href="/">← 返回首页</a></nav>
+  <nav class="post-foot"><a href="${href()}">← 返回首页</a></nav>
 </article>`,
       headExtra: `<meta property="article:published_time" content="${esc(p.date)}">`,
     })
@@ -192,14 +199,14 @@ ${p.html}
   const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"><channel>
 <title>${esc(SITE.title)}</title>
-<link>${SITE.url}/</link>
+<link>${SITE.url}</link>
 <description>${esc(SITE.description)}</description>
 ${posts
   .map(
     (p) => `<item>
   <title>${esc(p.title)}</title>
-  <link>${SITE.url}/posts/${p.slug}/</link>
-  <guid>${SITE.url}/posts/${p.slug}/</guid>
+  <link>${SITE.url}posts/${p.slug}/</link>
+  <guid>${SITE.url}posts/${p.slug}/</guid>
   <pubDate>${new Date(p.date + 'T00:00:00Z').toUTCString()}</pubDate>
   <description>${esc(p.summary)}</description>
 </item>`
@@ -211,7 +218,7 @@ ${posts
   // 404
   await writeFile(
     path.join(DIST, '404.html'),
-    page({ title: '404', description: SITE.description, content: `<section class="hero"><h1>找不到这个页面</h1><p><a href="/">回到首页</a></p></section>` })
+    page({ title: '404', description: SITE.description, content: `<section class="hero"><h1>找不到这个页面</h1><p><a href="${href()}">回到首页</a></p></section>` })
   )
 
   console.log(`✓ 构建完成：${posts.length} 篇文章 -> dist/`)

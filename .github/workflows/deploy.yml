@@ -26,6 +26,7 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: node build.mjs
         env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
           SITE_HOST: ${{ github.repository_owner }}.github.io
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
